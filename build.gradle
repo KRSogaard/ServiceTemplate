@@ -1,0 +1,112 @@
+buildscript {
+	ext {
+		springBootVersion = '2.2.6.RELEASE'
+	}
+
+	repositories {
+		mavenCentral()
+		maven {
+			name = "Wewelo Repo"
+			url "s3://${weweloRepo}"
+			credentials(AwsCredentials) {
+				accessKey weweloRepoUser
+				secretKey weweloRepoPassword
+			}
+		}
+	}
+
+	configurations.all {
+		// check for updates every build (if we are using snapshot with the same version)
+		resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+	}
+
+	dependencies {
+		//classpath 'com.wewelo.WeweloPlugin:1.0'
+		// Needed for errorprone, we are working on includeing this into the plugin
+		classpath "net.ltgt.gradle:gradle-errorprone-plugin:1.1.1"
+	}
+}
+
+plugins {
+	id 'org.springframework.boot' version '2.2.6.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'java'
+	//id 'wewelo'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+	mavenCentral()
+	maven {
+		name = "Wewelo Repo"
+		url "s3://${weweloRepo}"
+		credentials(AwsCredentials) {
+			accessKey weweloRepoUser
+			secretKey weweloRepoPassword
+		}
+	}
+}
+
+sourceSets {
+	main.java.srcDirs = ['src']
+	main.resources.srcDirs = ['resources']
+	test.java.srcDirs = ['tst']
+	test.resources.srcDirs = ['tst/resources']
+}
+
+//jacocoTestCoverageVerification {
+//	violationRules {
+//		rule {
+//			limit {
+//				minimum = 0.3
+//			}
+//			excludes = [
+//					'**/Application.*',
+//					'**/*Configuration.*'
+//			]
+//		}
+//	}
+//}
+
+configurations {
+	all {
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+	}
+}
+
+dependencies {
+	implementation 'com.wewelo.WeweloPlugin:1.0'
+	implementation 'com.google.guava:guava:28.0-jre'
+	implementation 'org.apache.commons:commons-lang3:3.0'
+
+	//implementation 'com.amazonaws:aws-java-sdk-s3:1.11.692'
+	implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.692'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+	implementation 'org.springframework.boot:spring-boot-starter-jersey'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compile 'org.springframework.boot:spring-boot-starter-actuator'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+task runlocal {
+	bootRun.configure {
+		project.logger.lifecycle("======================================")
+		project.logger.lifecycle("= Running application in beta stage =")
+		project.logger.lifecycle("======================================")
+		systemProperty "spring.profiles.active", 'beta'
+	}
+}
+runlocal.finalizedBy bootRun
